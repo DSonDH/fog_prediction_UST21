@@ -1,0 +1,46 @@
+model_name: cb
+
+hydra:
+  sweeper:
+    direction:
+      - maximize
+    n_trials: 150  # TPESampler
+    n_jobs: 1
+
+    # m 넣으면 여기밑에 내용들로 hyper-parameter 값 변경
+    # sweeper 안에 model_params 라는 custom dictionary 정의하면 안돌아감 Key not in 'OptunaSweeperConf'
+    # params_search에 바뀔 애들만 정의하고, 맨 밑에 고정된 애들은 고정됨
+    params:
+      # y: choice(-5, 0, 5)  
+      # https://hydra.cc/docs/1.2/advanced/override_grammar/extended/
+      # https://hydra.cc/docs/1.2/advanced/override_grammar/basic/#grammar
+      model_params.learning_rate: 
+        range(0.005,0.105, step=0.01) # 11 lvl
+      model_params.depth: 
+        range(7, 10, step=2) # 7 lvl
+      model_params.min_data_in_leaf: 
+        range(1, 31, step=1)  # 11 lvl
+      model_params.l2_leaf_reg: 
+        range(1, 5, step=2)  # 3 lvl
+      
+      pos_label_ratio:
+        choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.05, 0.1, 0.3)  # 8 lvl
+
+# -m 안넣으면 얘내로만 작동
+pos_label_ratio: 0.005
+model_params:      
+  learning_rate: 0.075
+  depth: 7
+  min_data_in_leaf: 19
+  l2_leaf_reg: 3
+
+  n_estimators: 1000
+  early_stopping_rounds: 10
+  verbose: False
+  eval_metric: 'TotalF1'
+  use_best_model: True
+  task_type: "GPU"
+  gpu_cat_features_storage: CpuPinnedMemory
+  random_seed: 1
+  gpu_ram_part: 0.90
+

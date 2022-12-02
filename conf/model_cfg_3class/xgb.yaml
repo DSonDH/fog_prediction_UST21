@@ -1,0 +1,37 @@
+model_name: xgb
+
+hydra:
+  sweeper:
+    direction:
+      - maximize
+    n_trials: 200
+    n_jobs: 1
+
+    params:
+      model_params.eta:
+        range(0.05, 0.3, step=0.5)  # 7 lvl
+      model_params.max_depth:
+        range(3, 50, step=2)  # 17 lvl
+      model_params.max_leaves:
+        range(1, 31, step=3)  # 11 lvl
+      model_params.lambda:
+        range(1, 5, step=2)  # 3 lvl
+      model_params.gamma:
+        range(0, 0.02, step=0.01)  # 3 lvl
+      pos_label_ratio:
+        choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.05, 0.1, 0.3, 0.6)  # 9 lvl
+
+pos_label_ratio: 0.01
+model_params:      
+  eta: 0.05
+  max_depth: 41
+  max_leaves: 7
+  lambda: 5
+  gamma: 0.01
+
+  n_estimators: 1000
+  early_stopping_rounds: 10
+  verbosity: 0
+  tree_method: "gpu_hist"
+  seed: 1
+  save_best: 'True'

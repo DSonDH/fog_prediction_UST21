@@ -1,0 +1,44 @@
+model_name: lgb
+
+hydra:
+  sweeper:
+    direction:
+      - maximize
+    n_trials: 150
+    n_jobs: 1
+
+    params:
+      model_params.learning_rate:
+        range(0.005, 0.125, step=0.03)  # 5 lvl
+      model_params.max_depth:
+        range(2, 32, step=3)  # 11 lvl
+      model_params.num_leaves:
+        range(5, 60, step=5)  # 8 lvl
+      model_params.min_child_samples:
+        range(1, 22, step=1)  # 8 lvl
+      model_params.lambda_l2:
+        range(0, 6, step=2)  # 4 lvl
+
+      pos_label_ratio:
+        choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.05, 0.1, 0.3)  # 8 lvl
+      boosting:
+        "choice('gbdt', 'dart', 'goss')"
+      #!!! categorical string option은 "" 로 감싸서 구현해야함.
+      # https://hydra.cc/docs/1.2/advanced/override_grammar/extended/
+      # https://hydra.cc/docs/1.2/advanced/override_grammar/basic/#grammar
+pos_label_ratio: 0.3
+# num_leaves 는 step2 script에서 조절
+boosting: 'gbdt'
+model_params:      
+  learning_rate: 0.035
+  max_depth: 8
+  num_leaves: 55
+  min_child_samples: 7
+  lambda_l2: 6
+
+  n_estimators: 1000
+  early_stopping_round: 10
+  verbosity: -1
+  n_jobs: 15
+  seed: 1
+  device: "gpu"

@@ -1,0 +1,48 @@
+defaults:
+  - _self_
+  - model_cfg@_global_ : lgb  # FIXME:
+  - override hydra/sweeper: optuna 
+  - override hydra/job_logging: colorlog
+  - override hydra/hydra_logging: colorlog
+
+station_code: SF_0011  # FIXME:
+api_version: 2.1
+stage: train
+
+pred_hour: 1  # FIXME:
+target_name: y_${pred_hour}
+test_start: 2021-07-01
+
+log_prefix: ./data/log_LGB_bug/${api_version}/${station_code}/${pred_hour}/${model_name}
+
+hydra:
+  job:
+    env_set:
+      CUDA_VISIBLE_DEVICES: "3"  # FIXME:
+  run:
+    dir: ${log_prefix}/outputs/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: ${log_prefix}/multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}
+  sweeper:
+    sampler:
+      _target_: optuna.samplers.TPESampler
+      multivariate: true # default: false
+    study_name: ${station_code}_${pred_hour}_${model_name}
+    storage: sqlite:///study_LGB_bug.db  # FIXME:
+
+catalogue:
+  processed: /home/sdh/fog-dnn/data/processed/${station_code}_newTd_FC30.pkl  # FIXME:
+  model_in: data/model_in/${station_code}.pkl
+  validate: data/validate/${station_code}.pkl
+  test: data/test/${station_code}.pkl
+  log: data/log
+  best_params: output/best_params_allModel/${api_version}/${station_code}/${pred_hour}/${model_name}
+  best_model: output/best_model/${api_version}/${station_code}/${pred_hour}
+  test_result: output/test_score//${api_version}/${station_code}/${pred_hour}/${model_name}.yaml
+
+transform:
+    korea: False
+  
+drop_cols: ['station_code']
+
