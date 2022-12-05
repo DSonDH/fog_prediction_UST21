@@ -9,6 +9,10 @@ import lightgbm
 import numpy as np
 import optuna
 import pandas as pd
+
+from pathlib import Path
+from hydra.utils import get_original_cwd
+
 from omegaconf import DictConfig, OmegaConf, open_dict
 from sklearn.pipeline import make_pipeline
 from sklearn.preprocessing import StandardScaler
@@ -152,33 +156,35 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         X, y, cv = load_data(cfg)
 
         best_f1 = []
-        best_model = []
+        best_model_name = []
         for model in ['cb', 'lgb', 'rf']: 
-        # 기존 : 어차피 성능 덜 좋은 모델들은 best모델에 씹혀먹힘
-        # 현재 : 항 별로 따로 성능 기록하여 best f1비교하여 best만 가져다 씀
-            loaded_study = optuna.load_study(
-                    study_name=f"{port}_{pred_hour}_{model}",
-                    storage=f"sqlite:///{db_name}")
-            record = loaded_study.best_trial
-            f1 = record._values[0]
+            target = '/'.join(cfg.log_prefix.split('/')[:4]) \
+                        + f'/{port}/{pred_hour}/{model}'
+            one_config_file = (Path(get_original_cwd()) / target).glob(
+                                        '**/.hydra/config.yaml').__next__()
+            metric_file = one_config_file.parent.parent.parent / \
+                                                'optimization_results.yaml'
+            f1 = OmegaConf.load(metric_file)['best_value']
             best_f1.append(f1)
-            best_model.append(model)
+            best_model_name.append(model)
         idx1 = best_f1.index(sorted(best_f1)[-1])
-        best_model = best_model[idx1]
+        best_model_name = best_model_name[idx1]
                
         # load best model
-        loaded_study = optuna.load_study(
-                    study_name=f"{port}_{pred_hour}_{best_model}",
-                    storage=f"sqlite:///{db_name}")
-        best_record = loaded_study.best_trial
-        best_f1 = best_record._values[0]
-        best_modelParams = best_record._params
+        target = '/'.join(cfg.log_prefix.split('/')[:4]) \
+                    + f'/{port}/{pred_hour}/{best_model_name}'
+        one_config_file = (Path(get_original_cwd()) / target).glob(
+                                    '**/.hydra/config.yaml').__next__()
+        metric_file = one_config_file.parent.parent.parent / \
+                                            'optimization_results.yaml'
+        best_modelParams = OmegaConf.load(metric_file)['best_params']
+        
         best_modelParams = \
                 {item.split('.')[-1]:best_modelParams[item] 
                                     for item in best_modelParams}
         # load HP of best model
         cfg_bestmodel = OmegaConf.load(
-                                f'conf/model_cfg_{exp}/{best_model}.yaml')    
+                                f'conf/model_cfg_{exp}/{best_model_name}.yaml')    
         cfg_bestmodel.pop('hydra')
         cfg_bestmodel.pop('model_name')
         
@@ -203,16 +209,16 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         label0_weight = (sum(mask0))/(sum(mask2) + 1) * cfg.pos_label_ratio
         sample_weight[mask0] = 1 / label0_weight  # give less weight
 
-        if best_model == 'cb':
+        if best_model_name == 'cb':
             mp.pop('pos_label_ratio')
         
         # finally update cfg (from hydra) variable
         cfg.model_params = mp
-        cfg.model_name = best_model
+        cfg.model_name = best_model_name
 
         # train and get 3fold test result
         print(f'\n\n{"="*40}')
-        print(f'Now refit with best HP: {port}_{pred_hour}_{best_model}')
+        print(f'Now refit with best HP: {port}_{pred_hour}_{best_model_name}')
         print(f'{"="*40}')
 
         best_metrics = custom_cross_val_predict(

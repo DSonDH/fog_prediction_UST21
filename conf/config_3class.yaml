@@ -5,11 +5,11 @@ defaults:
   - override hydra/job_logging: colorlog
   - override hydra/hydra_logging: colorlog
 
-station_code: SF_0002  # FIXME:
+station_code: SF_0003  # FIXME:
 api_version: 2.1
 stage: train
 
-pred_hour: 1  # FIXME:
+pred_hour: 3  # FIXME:
 target_name: y_${pred_hour}
 test_start: 2021-07-01
 

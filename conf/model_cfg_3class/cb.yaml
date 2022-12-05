@@ -4,7 +4,7 @@ hydra:
   sweeper:
     direction:
       - maximize
-    n_trials: 200  # TPESampler
+    n_trials: 300  # TPESampler
     n_jobs: 1
 
     # m 넣으면 여기밑에 내용들로 hyper-parameter 값 변경
@@ -15,7 +15,7 @@ hydra:
       # https://hydra.cc/docs/1.2/advanced/override_grammar/extended/
       # https://hydra.cc/docs/1.2/advanced/override_grammar/basic/#grammar
       model_params.learning_rate: 
-        range(0.005,0.105, step=0.01) # 11 lvl
+        range(0.005, 0.105, step=0.01) # 11 lvl
       model_params.depth: 
         range(7, 10, step=2) # 7 lvl
       model_params.min_data_in_leaf: 

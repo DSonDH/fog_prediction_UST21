@@ -30,12 +30,6 @@ df_debug = pd.DataFrame(
         columns=["ACC", "PAG", "POD", "F1", "TN", "FP", "FN", "TP"])
 
 
-"""TODO: yaml파일 읽어서 best_HP 업데이트 하도록 수정
-weight 관련 이상한점 없는지 수정
-모델 저장 후 경로 동헌씨께 카톡으로 송부 (기존 weight는 old로 저장)
-"""
-
-
 # from tune_sklearn import TuneSearchCV
 def custom_cross_val_predict(X, y, cv, sample_weight, cfg, my_options, 
                              label1_weight) -> List:
@@ -238,6 +232,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
                     metric_file = one_config_file.parent.parent.parent / \
                                                         'optimization_results.yaml'
                     best_modelParams = OmegaConf.load(metric_file)['best_params']
+                    
                     best_modelParams = \
                             {item.split('.')[-1]:best_modelParams[item] 
                                                 for item in best_modelParams}
