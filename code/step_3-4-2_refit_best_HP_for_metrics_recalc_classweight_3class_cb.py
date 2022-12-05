@@ -139,7 +139,6 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
 
-
     port = 'SF_0003'
     for pred_hour in [1, 3, 6]:
         
@@ -152,14 +151,14 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         
         # load best model
         loaded_study = optuna.load_study(
-                    study_name=f"{port}_{pred_hour}_{best_model}",
-                    storage=f"sqlite:///{db_name}")
+                       study_name=f"{port}_{pred_hour}_{best_model}",
+                       storage=f"sqlite:///{db_name}"
+                       )
         best_record = loaded_study.best_trial
         best_f1 = best_record._values[0]
         best_modelParams = best_record._params
-        best_modelParams = \
-                {item.split('.')[-1]:best_modelParams[item] 
-                                    for item in best_modelParams}
+        best_modelParams = {item.split('.')[-1]:best_modelParams[item] 
+                            for item in best_modelParams}
         # load HP of best model
         cfg_bestmodel = OmegaConf.load(
                                 f'conf/model_cfg_{exp}/{best_model}.yaml')    
@@ -171,14 +170,12 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
             if item in cfg_bestmodel:
                 cfg_bestmodel[item] = best_modelParams[item]
             elif item in cfg_bestmodel.model_params:
-                cfg_bestmodel.model_params[item] = \
-                                        best_modelParams[item]
+                cfg_bestmodel.model_params[item] = best_modelParams[item]
 
         mp = cfg_bestmodel.pop('model_params')
         mp = {**cfg_bestmodel, **mp}
 
         # best param으로 업데이트하도록 위치 옮김
-
         sample_weight = np.ones_like(y)
         mask0 = (y == 0)
         mask1 = (y == 1)
@@ -194,7 +191,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         cfg.model_params = mp
         cfg.model_name = best_model
 
-        # train and get 3fold test result
+        # train and get test result
         print(f'\n\n{"="*40}')
         print(f'Now refit with best HP: {port}_{pred_hour}_{best_model}')
         print(f'{"="*40}')
