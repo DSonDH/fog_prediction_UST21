@@ -53,10 +53,7 @@ def custom_cross_val_predict(X, y, cv, label0_weight, sample_weight, cfg):
         fit_params[f"{model.steps[-1][0]}__sample_weight"] = sample_weight[train_idx]
         fit_params[f"{model.steps[-1][0]}__eval_set"] = [(X_val, y_val)]
         # do fitting
-        try:  # LGB에 is_unbalance같은 option주고 학습하면 가끔 error뜸.
-            # 버전 업데이트 해도 생기고
-            # 어쩔때는 안생기고, try except로 두번 시도하면 해결되는거 같기도 하고.
-            # loss가 1도 안떨어지고 안올라갈때 발생하는 듯 함.
+        try:  
             model.fit(X_tr, y_tr, **fit_params)
         except:
             print(f'{cfg.model_name} crashed !!!!')
@@ -151,21 +148,8 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         
         X, y, cv = load_data(cfg)
 
-        best_f1 = []
-        best_model = []
-        for model in ['cb', 'lgb', 'rf']: 
-        # 기존 : 어차피 성능 덜 좋은 모델들은 best모델에 씹혀먹힘
-        # 현재 : 항 별로 따로 성능 기록하여 best f1비교하여 best만 가져다 씀
-            loaded_study = optuna.load_study(
-                    study_name=f"{port}_{pred_hour}_{model}",
-                    storage=f"sqlite:///{db_name}")
-            record = loaded_study.best_trial
-            f1 = record._values[0]
-            best_f1.append(f1)
-            best_model.append(model)
-        idx1 = best_f1.index(sorted(best_f1)[-1])
-        best_model = best_model[idx1]
-               
+        best_model = 'cb'
+        
         # load best model
         loaded_study = optuna.load_study(
                     study_name=f"{port}_{pred_hour}_{best_model}",
@@ -219,8 +203,8 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
                 X, y, cv, label0_weight, sample_weight, cfg
         )
     
-    df1.to_csv(f'{save_dir}/CM_macro_score.csv')
-    df2.to_csv(f'{save_dir}/each_label_score.csv')
+    df1.to_csv(f'{save_dir}/CM_macro_score_cb.csv')
+    df2.to_csv(f'{save_dir}/each_label_score_cb.csv')
 
     
 
