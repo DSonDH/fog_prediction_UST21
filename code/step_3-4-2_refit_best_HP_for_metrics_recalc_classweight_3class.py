@@ -208,7 +208,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         mask2 = (y == 2)
         
         smpl_freq = [1, (sum(mask0))/(sum(mask1) + 1), (sum(mask0))/(sum(mask2) + 1)]
-        label0_weight = [(sum(mask0))/(sum(mask2) + 1) * cfg.pos_label_ratio]
+        label0_weight = (sum(mask0))/(sum(mask2) + 1) * cfg.pos_label_ratio
         sample_weight[mask0] = 1 / label0_weight  # give less weight
 
         if best_model_name == 'cb':
