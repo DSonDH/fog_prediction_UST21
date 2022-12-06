@@ -16,7 +16,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 
 # from tune_sklearn import TuneSearchCV
-def custom_cross_val_predict(X, y, cv, label1_weight, sample_weight, cfg) -> List:
+def custom_cross_val_predict(X, y, cv, label0_weight, sample_weight, smpl_freq, cfg):
     """
     model, x, y, cross validator, fit_params가 주어지면
     cv로 x,y를 n등분하고 각각 model로 fitting한 후
@@ -38,7 +38,7 @@ def custom_cross_val_predict(X, y, cv, label1_weight, sample_weight, cfg) -> Lis
             break
         
         # loop안에서 정의해야 model cv독립적으로 생성됨
-        model = load_pipe(cfg, label1_weight)
+        model = load_pipe(cfg, label0_weight, smpl_freq)  
 
         if cfg.model_name == 'xgb':
             X_tr = X.iloc[train_idx].values
@@ -84,12 +84,34 @@ def custom_cross_val_predict(X, y, cv, label1_weight, sample_weight, cfg) -> Lis
         #     ft_dict2 = {list(ft_dict.keys())[i]: list(ft_dict.values())[i] for i in range(10)}
         #     items = list(ft_dict2.keys())
         #     values = list(ft_dict2.values())
+
+        # temp code for parameter tuning
+        # from sklearn.metrics import multilabel_confusion_matrix
+        # print(f"macro_scores : [{score['macro_PAG']*100:.1f}, {score['macro_POD']*100:.1f}, "\
+        #       f"{score['macro_F1']*100:.1f}]")
+        # mcm = multilabel_confusion_matrix(y_te, pred)
+        # for i in range(3):
+        #     TN, FP, FN, TP = mcm[i].flatten()
+        #     label = i
+        #     acc = np.round((TN + TP) / (TN + FP + FN + TP) * 100, 2)
+        #     pag = np.round((TP) / (TP + FP) * 100, 2)
+        #     pod = np.round((TP) / (TP + FN) * 100, 2)
+        #     f1 = np.round((2 * pag * pod) / (pag + pod), 2)
+        #     print(f"{cfg.pred_hour}H_label{label} : [{pag}, {pod}, {f1}]")
+        
         return score
+        # import optuna        
+        # loaded_study = optuna.load_study(
+        #             study_name=f"SF_0003_6_cb",
+        #             storage=f"sqlite:///study_3class.db")
+        # best_record = loaded_study.best_trial
+        # best_f1 = best_record._values[0]
+        # best_modelParams = best_record._params
         
 
 
 # get estimator
-def get_estimator(weight, model_name, model_params: Optional[Dict] = None):
+def get_estimator(weight, sample_freq, model_name, model_params: Optional[Dict] = None):
     if model_params is None:
         model_params = {}
 
@@ -114,7 +136,7 @@ def get_estimator(weight, model_name, model_params: Optional[Dict] = None):
     elif model_name == "cb":
         return catboost.CatBoostClassifier(
             # class_weights = [1, weight],
-            **model_params, 
+            **model_params
         )
 
     elif model_name == "xgb":
@@ -125,12 +147,11 @@ def get_estimator(weight, model_name, model_params: Optional[Dict] = None):
 
 
 # load scikit-learn pipeline
-def load_pipe(cfg: DictConfig, weight):
-    base_model = get_estimator(weight, cfg.model_name, cfg.model_params)
+def load_pipe(cfg: DictConfig, weight, smpl_freq):
+    base_model = get_estimator(weight, smpl_freq, cfg.model_name, cfg.model_params)
     pipe = make_pipeline(
         StandardScaler(),
-        base_model,
-    )
+        base_model,)
     return pipe
 
 
@@ -146,6 +167,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         mask1 = (y == 1)
         mask2 = (y == 2)
         
+        smpl_freq = [1, (sum(mask0))/(sum(mask1) + 1), (sum(mask0))/(sum(mask2) + 1)]
         label0_weight = (sum(mask0))/(sum(mask2) + 1) * cfg.pos_label_ratio
         # label1_weight = (sum(mask1))/(sum(mask2) + 1) * cfg.pos_label_ratio
         # label1도 잘 맞히고자 하는 거니깐 보통 시정만 가중치 낮춰보자
@@ -153,7 +175,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         sample_weight[mask0] = 1 / label0_weight  # give less weight
         # sample_weight[mask1] = 1 / label1_weight  # give less weight
 
-        metrics = custom_cross_val_predict(X, y, cv, label0_weight, sample_weight, cfg)
+        metrics = custom_cross_val_predict(X, y, cv, label0_weight, sample_weight, smpl_freq, cfg)
         OmegaConf.save(
             OmegaConf.create(metrics),
             'metrics.yaml'

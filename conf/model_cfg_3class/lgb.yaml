@@ -20,7 +20,8 @@ hydra:
         range(0, 6, step=2)  # 4 lvl
 
       pos_label_ratio:
-        choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.05, 0.1, 0.3, 0.6)  # 9 lvl
+        # choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.03, 0.05, 0.1, 0.3, 0.6)  # 9 lvl
+        interval(0.001, 0.6)
       boosting:
         "choice('gbdt', 'dart', 'goss')"
       #!!! categorical string option은 "" 로 감싸서 구현해야함.

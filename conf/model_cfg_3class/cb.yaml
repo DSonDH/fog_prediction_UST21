@@ -4,7 +4,7 @@ hydra:
   sweeper:
     direction:
       - maximize
-    n_trials: 300  # TPESampler
+    n_trials: 200  # TPESampler
     n_jobs: 1
 
     # m 넣으면 여기밑에 내용들로 hyper-parameter 값 변경
@@ -24,18 +24,19 @@ hydra:
         range(1, 5, step=2)  # 3 lvl
       
       pos_label_ratio:
-        choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.05, 0.1, 0.3, 0.6)  # 9 lvl
+        # choice(0.001, 0.003, 0.005, 0.007, 0.01, 0.03, 0.05, 0.1, 0.3, 0.6)  # 9 lvl
+        interval(0.001, 0.6)
       eval_metric:
         "choice('TotalF1', 'MCC', 'MultiClass')"
 
 # -m 안넣으면 얘내로만 작동
-pos_label_ratio: 0.005
-eval_metric: 'TotalF1'
+pos_label_ratio: 0.3
+eval_metric: 'MCC'
 model_params:      
-  learning_rate: 0.075
+  learning_rate: 0.045
   depth: 7
-  min_data_in_leaf: 19
-  l2_leaf_reg: 3
+  min_data_in_leaf: 4
+  l2_leaf_reg: 5
 
   n_estimators: 1000
   early_stopping_rounds: 10

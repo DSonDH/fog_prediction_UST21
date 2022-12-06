@@ -45,8 +45,7 @@ def custom_cross_val_predict(X, y, cv, label0_weight, sample_weight, cfg):
         cv_idx += 1
         if cv_idx > 1:
             continue
-        model = load_pipe(cfg, label0_weight)  
-        # loop안에서 정의해야 model cv독립적으로 생성됨
+        model = load_pipe(cfg, label0_weight)  # loop안에서 정의해야 model cv독립적으로 생성됨
 
         X_tr = X.iloc[train_idx]
         y_tr = y.iloc[train_idx]
@@ -158,18 +157,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
 
         best_f1 = []
         best_model_name = []
-        for model in ['cb', 'lgb', 'rf']: 
-            target = '/'.join(cfg.log_prefix.split('/')[:4]) \
-                        + f'/{port}/{pred_hour}/{model}'
-            one_config_file = (Path(get_original_cwd()) / target).glob(
-                                        '**/.hydra/config.yaml').__next__()
-            metric_file = one_config_file.parent.parent.parent / \
-                                                'optimization_results.yaml'
-            f1 = OmegaConf.load(metric_file)['best_value']
-            best_f1.append(f1)
-            best_model_name.append(model)
-        idx1 = best_f1.index(sorted(best_f1)[-1])
-        best_model_name = best_model_name[idx1]
+        best_model_name = 'cb'
                
         # load best model
         target = '/'.join(cfg.log_prefix.split('/')[:4]) \
@@ -207,8 +195,7 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
         mask1 = (y == 1)
         mask2 = (y == 2)
         
-        smpl_freq = [1, (sum(mask0))/(sum(mask1) + 1), (sum(mask0))/(sum(mask2) + 1)]
-        label0_weight = [(sum(mask0))/(sum(mask2) + 1) * cfg.pos_label_ratio]
+        label0_weight = (sum(mask0))/(sum(mask2) + 1) * cfg.pos_label_ratio
         sample_weight[mask0] = 1 / label0_weight  # give less weight
 
         if best_model_name == 'cb':
@@ -227,8 +214,8 @@ def _main(cfg: Union[DictConfig, OmegaConf]):
                 X, y, cv, label0_weight, sample_weight, cfg
         )
     
-    df1.to_csv(f'{save_dir}/CM_macro_score.csv')
-    df2.to_csv(f'{save_dir}/each_label_score.csv')
+    df1.to_csv(f'{save_dir}/CM_macro_score_cb.csv')
+    df2.to_csv(f'{save_dir}/each_label_score_cb.csv')
 
     
 
